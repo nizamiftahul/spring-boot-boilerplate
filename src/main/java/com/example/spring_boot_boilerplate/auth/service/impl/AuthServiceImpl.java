@@ -1,5 +1,8 @@
-package com.example.spring_boot_boilerplate.auth;
+package com.example.spring_boot_boilerplate.auth.service.impl;
 
+import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
+import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
+import com.example.spring_boot_boilerplate.auth.service.AuthService;
 import com.example.spring_boot_boilerplate.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -21,8 +23,8 @@ import java.util.UUID;
  * Single Responsibility: Manage token operations and token store.
  */
 @Service
-public class AuthService {
-    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+public class AuthServiceImpl implements AuthService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -30,7 +32,7 @@ public class AuthService {
     /**
      * Constructor injection of dependencies.
      */
-    public AuthService(
+    public AuthServiceImpl(
             JwtTokenProvider jwtTokenProvider,
             RefreshTokenRepository refreshTokenRepository) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -40,17 +42,17 @@ public class AuthService {
     /**
      * Create a new refresh token for a user.
      * 
-     * @param username the user
+     * @param username         the user
      * @param expiryDurationMs duration in milliseconds
      * @return refresh token value
      */
+    @Override
     public String createRefreshToken(String username, long expiryDurationMs) {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = new RefreshToken(
                 token,
                 username,
-                Instant.now().plusMillis(expiryDurationMs)
-        );
+                Instant.now().plusMillis(expiryDurationMs));
         refreshTokenRepository.save(refreshToken);
         logger.debug("Created refresh token for user: {}", username);
         return token;
@@ -63,10 +65,11 @@ public class AuthService {
      * @param oldRefreshToken the refresh token to validate
      * @return new refresh token, null if invalid or expired
      */
+    @Override
     @Transactional
     public String rotateRefreshToken(String oldRefreshToken, long expiryDurationMs) {
         var optToken = refreshTokenRepository.findByToken(oldRefreshToken);
-        
+
         if (optToken.isEmpty()) {
             logger.warn("Refresh token not found: {}", oldRefreshToken);
             return null;
@@ -91,6 +94,7 @@ public class AuthService {
      * 
      * @param refreshToken the token to revoke
      */
+    @Override
     public void revokeRefreshToken(String refreshToken) {
         refreshTokenRepository.findByToken(refreshToken).ifPresent(token -> {
             refreshTokenRepository.delete(token);
@@ -103,6 +107,7 @@ public class AuthService {
      * 
      * @param username the user
      */
+    @Override
     @Transactional
     public void revokeAllUserTokens(String username) {
         refreshTokenRepository.deleteByUsername(username);
@@ -115,9 +120,10 @@ public class AuthService {
      * @param refreshToken the token to validate
      * @return username if valid and not expired, null otherwise
      */
+    @Override
     public String validateRefreshToken(String refreshToken) {
         var optToken = refreshTokenRepository.findByToken(refreshToken);
-        
+
         if (optToken.isEmpty()) {
             return null;
         }

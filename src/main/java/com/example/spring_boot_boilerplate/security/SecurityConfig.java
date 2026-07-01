@@ -67,11 +67,12 @@ public class SecurityConfig {
      * Configuration:
      * - CSRF: Disabled (stateless JWT, no session cookies)
      * - Session: STATELESS (JWT-based, no server-side sessions)
-     * - Authentication filter: JwtAuthenticationFilter added before UsernamePasswordAuthenticationFilter
+     * - Authentication filter: JwtAuthenticationFilter added before
+     * UsernamePasswordAuthenticationFilter
      * - Endpoint authorization:
-     *   - /auth/**: Permitted (login, refresh, logout endpoints)
-     *   - /h2-console/**: Permitted (H2 console for dev)
-     *   - All others: Requires authentication
+     * - /auth/**: Permitted (login, refresh, logout endpoints)
+     * - /h2-console/**: Permitted (H2 console for dev)
+     * - All others: Requires authentication
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

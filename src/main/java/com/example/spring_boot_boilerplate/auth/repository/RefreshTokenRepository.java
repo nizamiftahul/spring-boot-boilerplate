@@ -1,8 +1,10 @@
-package com.example.spring_boot_boilerplate.auth;
+package com.example.spring_boot_boilerplate.auth.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
+import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
+
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,7 +14,6 @@ import java.util.UUID;
  * Data access interface for RefreshToken persistence.
  * Abstracts database operations (Dependency Inversion principle).
  */
-@Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
     /**
@@ -29,4 +30,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
      * Delete all refresh tokens for a specific user (logout all devices).
      */
     void deleteByUsername(String username);
+
+    /**
+     * Delete all refresh tokens that have expired before the given time.
+     */
+    long deleteByExpiresAtBefore(Instant now);
 }

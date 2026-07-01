@@ -2,7 +2,6 @@ package com.example.spring_boot_boilerplate.security;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.jsonwebtoken.SignatureException;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

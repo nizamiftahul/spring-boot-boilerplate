@@ -1,4 +1,4 @@
-package com.example.spring_boot_boilerplate.auth;
+package com.example.spring_boot_boilerplate.auth.service.impl;
 
 import java.util.List;
 import org.slf4j.Logger;
@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
+import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
+import com.example.spring_boot_boilerplate.auth.service.ConcurrentTokenLimitService;
 
 /**
  * Enforces concurrent token limits per user (e.g., max 5 devices).
@@ -15,14 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
  * Dependency Inversion: Depends on RefreshTokenRepository abstraction.
  */
 @Service
-public class ConcurrentTokenLimitService {
+public class ConcurrentTokenLimitServiceImpl implements ConcurrentTokenLimitService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConcurrentTokenLimitService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConcurrentTokenLimitServiceImpl.class);
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final int maxConcurrentTokens;
 
-    public ConcurrentTokenLimitService(
+    public ConcurrentTokenLimitServiceImpl(
             RefreshTokenRepository refreshTokenRepository,
             @Value("${jwt.max-concurrent-tokens:5}") int maxConcurrentTokens) {
         this.refreshTokenRepository = refreshTokenRepository;
@@ -35,6 +39,7 @@ public class ConcurrentTokenLimitService {
      * @param username User identifier
      * @return true if limit enforced (oldest token revoked), false if under limit
      */
+    @Override
     @Transactional
     public boolean enforceConcurrentLimit(String username) {
         List<RefreshToken> userTokens = (List<RefreshToken>) refreshTokenRepository.findByUsername(username);
@@ -58,6 +63,7 @@ public class ConcurrentTokenLimitService {
         return false;
     }
 
+    @Override
     public int getMaxConcurrentTokens() {
         return maxConcurrentTokens;
     }

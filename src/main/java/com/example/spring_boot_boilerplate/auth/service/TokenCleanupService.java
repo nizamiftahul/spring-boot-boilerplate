@@ -1,4 +1,4 @@
-package com.example.spring_boot_boilerplate.auth;
+package com.example.spring_boot_boilerplate.auth.service;
 
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
 
 /**
  * Scheduled service to clean up expired refresh tokens.
@@ -41,18 +43,8 @@ public class TokenCleanupService {
     public void cleanupExpiredTokens() {
         Instant now = Instant.now();
 
-        // Get all tokens (inefficient for large tables; in production, add DB-level
-        // cleanup or pagination)
-        Iterable<RefreshToken> allTokens = refreshTokenRepository.findAll();
-        int deletedCount = 0;
-
-        for (RefreshToken token : allTokens) {
-            if (token.getExpiryDate().isBefore(now)) {
-                refreshTokenRepository.delete(token);
-                deletedCount++;
-            }
-        }
-
+        // Delete expired tokens and log the count
+        long deletedCount = refreshTokenRepository.deleteByExpiresAtBefore(now);
         if (deletedCount > 0) {
             logger.info("Cleanup job: Deleted {} expired refresh tokens", deletedCount);
         } else {

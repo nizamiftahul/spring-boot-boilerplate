@@ -1,4 +1,4 @@
-package com.example.spring_boot_boilerplate.auth;
+package com.example.spring_boot_boilerplate.auth.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -32,7 +32,8 @@ public class RefreshToken {
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public RefreshToken() {}
+    public RefreshToken() {
+    }
 
     public RefreshToken(String token, String username, Instant expiryDate) {
         this.token = token;
@@ -41,18 +42,43 @@ public class RefreshToken {
     }
 
     // Getters & Setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getId() {
+        return id;
+    }
 
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getToken() {
+        return token;
+    }
 
-    public Instant getExpiryDate() { return expiryDate; }
-    public void setExpiryDate(Instant expiryDate) { this.expiryDate = expiryDate; }
+    public void setToken(String token) {
+        this.token = token;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Instant getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(Instant expiryDate) {
+        this.expiryDate = expiryDate;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
 }

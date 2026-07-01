@@ -1,9 +1,9 @@
-package com.example.spring_boot_boilerplate.web;
+package com.example.spring_boot_boilerplate.auth.controller;
 
-import com.example.spring_boot_boilerplate.auth.AuthResponse;
-import com.example.spring_boot_boilerplate.auth.AuthService;
-import com.example.spring_boot_boilerplate.auth.ConcurrentTokenLimitService;
-import com.example.spring_boot_boilerplate.auth.LoginRequest;
+import com.example.spring_boot_boilerplate.auth.dto.AuthResponse;
+import com.example.spring_boot_boilerplate.auth.dto.LoginRequest;
+import com.example.spring_boot_boilerplate.auth.service.AuthService;
+import com.example.spring_boot_boilerplate.auth.service.ConcurrentTokenLimitService;
 import com.example.spring_boot_boilerplate.security.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +30,8 @@ import java.util.List;
  * Enforces concurrent token limits per user.
  * 
  * Single Responsibility: HTTP request handling for auth operations.
- * Dependency Inversion: Depends on AuthService, ConcurrentTokenLimitService abstractions.
+ * Dependency Inversion: Depends on AuthService, ConcurrentTokenLimitService
+ * abstractions.
  */
 @RestController
 @RequestMapping("/auth")
@@ -83,9 +84,7 @@ public class AuthController {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsername(),
-                            request.getPassword()
-                    )
-            );
+                            request.getPassword()));
 
             // Extract roles from authentication
             List<String> roles = auth.getAuthorities().stream()
@@ -95,8 +94,7 @@ public class AuthController {
             // Create access token
             String accessToken = jwtTokenProvider.createAccessToken(
                     request.getUsername(),
-                    roles
-            );
+                    roles);
 
             // Enforce concurrent token limit (revoke oldest if needed)
             boolean limitEnforced = concurrentTokenLimitService.enforceConcurrentLimit(request.getUsername());
@@ -107,8 +105,7 @@ public class AuthController {
             // Create and store refresh token
             String refreshToken = authService.createRefreshToken(
                     request.getUsername(),
-                    refreshTokenExpirationMs
-            );
+                    refreshTokenExpirationMs);
 
             // Set refresh token in HttpOnly cookie
             setRefreshTokenCookie(response, refreshToken);
@@ -125,7 +122,8 @@ public class AuthController {
     /**
      * POST /auth/refresh
      * Exchange refresh token for new access token.
-     * Reads refresh token from HttpOnly cookie first, falls back to Authorization header.
+     * Reads refresh token from HttpOnly cookie first, falls back to Authorization
+     * header.
      * Rotates the refresh token (old revoked, new issued).
      */
     @PostMapping("/refresh")
@@ -163,8 +161,7 @@ public class AuthController {
             // Rotate refresh token
             String newRefreshToken = authService.rotateRefreshToken(
                     refreshToken,
-                    refreshTokenExpirationMs
-            );
+                    refreshTokenExpirationMs);
 
             if (newRefreshToken == null) {
                 logger.warn("Failed to rotate refresh token for user: {}", username);
@@ -224,7 +221,8 @@ public class AuthController {
      * Extract refresh token from HttpOnly cookie.
      */
     private String getRefreshTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+        if (request.getCookies() == null)
+            return null;
         for (Cookie cookie : request.getCookies()) {
             if (REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
                 return cookie.getValue();
@@ -251,9 +249,9 @@ public class AuthController {
     private void setRefreshTokenCookie(HttpServletResponse response, String token) {
         Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(isProduction);  // HTTPS only in production
+        cookie.setSecure(isProduction); // HTTPS only in production
         cookie.setPath("/");
-        cookie.setMaxAge((int) (refreshTokenExpirationMs / 1000));  // 7 days
+        cookie.setMaxAge((int) (refreshTokenExpirationMs / 1000)); // 7 days
         response.addCookie(cookie);
         logger.debug("Refresh token cookie set");
     }

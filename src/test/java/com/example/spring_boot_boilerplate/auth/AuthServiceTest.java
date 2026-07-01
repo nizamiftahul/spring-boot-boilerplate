@@ -11,9 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
+import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
+import com.example.spring_boot_boilerplate.auth.service.AuthService;
+import com.example.spring_boot_boilerplate.auth.service.impl.AuthServiceImpl;
 import com.example.spring_boot_boilerplate.security.JwtTokenProvider;
 
 /**
@@ -35,7 +39,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(jwtTokenProvider, refreshTokenRepository);
+        authService = new AuthServiceImpl(jwtTokenProvider, refreshTokenRepository);
     }
 
     @Test
