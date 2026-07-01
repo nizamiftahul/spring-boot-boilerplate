@@ -1,8 +1,14 @@
 package com.example.spring_boot_boilerplate.auth.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.Instant;
 import java.util.UUID;
+
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Refresh Token Entity.
@@ -13,6 +19,9 @@ import java.util.UUID;
  * Single Responsibility: Persist refresh token data.
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
 @Table(name = "refresh_tokens")
 public class RefreshToken {
 
@@ -27,58 +36,18 @@ public class RefreshToken {
     private String username;
 
     @Column(nullable = false)
-    private Instant expiryDate;
+    private Instant expiresAt;
 
+    @CreatedDate
     @Column(nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     public RefreshToken() {
     }
 
-    public RefreshToken(String token, String username, Instant expiryDate) {
+    public RefreshToken(String token, String username, Instant expiresAt) {
         this.token = token;
         this.username = username;
-        this.expiryDate = expiryDate;
-    }
-
-    // Getters & Setters
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Instant getExpiryDate() {
-        return expiryDate;
-    }
-
-    public void setExpiryDate(Instant expiryDate) {
-        this.expiryDate = expiryDate;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+        this.expiresAt = expiresAt;
     }
 }

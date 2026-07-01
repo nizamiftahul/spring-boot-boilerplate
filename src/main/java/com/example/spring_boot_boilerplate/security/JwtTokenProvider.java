@@ -46,19 +46,19 @@ public class JwtTokenProvider {
      * Create a new JWT access token with username and roles.
      * 
      * @param username the subject (username)
-     * @param roles the list of user roles
+     * @param roles    the list of user roles
      * @return JWT token string
      */
     public String createAccessToken(String username, List<String> roles) {
         try {
             Date now = new Date();
-            Date expiryDate = new Date(now.getTime() + expirationMs);
+            Date expiryAt = new Date(now.getTime() + expirationMs);
 
             String token = Jwts.builder()
                     .setSubject(username)
                     .claim(ROLES_CLAIM, roles)
                     .setIssuedAt(now)
-                    .setExpiration(expiryDate)
+                    .setExpiration(expiryAt)
                     .signWith(secretKey, SignatureAlgorithm.HS256)
                     .compact();
 

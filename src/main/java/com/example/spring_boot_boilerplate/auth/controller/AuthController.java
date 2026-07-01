@@ -115,7 +115,9 @@ public class AuthController {
 
         } catch (AuthenticationException e) {
             logger.warn("Login failed for user: {}", request.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw e; // Let GlobalExceptionHandler handle it
+            // Alternatively, return a generic error response:
+            // return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -176,7 +178,9 @@ public class AuthController {
 
         } catch (Exception e) {
             logger.error("Error during token refresh", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw e; // Let GlobalExceptionHandler handle it
+            // Alternatively, return a generic error response:
+            // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -211,7 +215,9 @@ public class AuthController {
 
         } catch (Exception e) {
             logger.error("Error during logout", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw e; // Let GlobalExceptionHandler handle it
+            // Alternatively, return a generic error response:
+            // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

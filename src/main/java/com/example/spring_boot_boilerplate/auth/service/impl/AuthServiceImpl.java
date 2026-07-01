@@ -78,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken token = optToken.get();
 
         // Check expiry
-        if (Instant.now().isAfter(token.getExpiryDate())) {
+        if (Instant.now().isAfter(token.getExpiresAt())) {
             logger.warn("Refresh token expired for user: {}", token.getUsername());
             refreshTokenRepository.delete(token);
             return null;
@@ -129,7 +129,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         RefreshToken token = optToken.get();
-        if (Instant.now().isAfter(token.getExpiryDate())) {
+        if (Instant.now().isAfter(token.getExpiresAt())) {
             refreshTokenRepository.delete(token);
             return null;
         }

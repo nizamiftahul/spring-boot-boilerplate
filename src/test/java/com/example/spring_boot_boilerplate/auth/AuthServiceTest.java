@@ -63,7 +63,7 @@ class AuthServiceTest {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUsername(username);
-        refreshToken.setExpiryDate(Instant.now().plusSeconds(3600));
+        refreshToken.setExpiresAt(Instant.now().plusSeconds(3600));
 
         when(refreshTokenRepository.findByToken(token)).thenReturn(Optional.of(refreshToken));
 
@@ -77,7 +77,7 @@ class AuthServiceTest {
     void testValidateExpiredRefreshToken() {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setExpiryDate(Instant.now().minusSeconds(3600)); // Expired
+        refreshToken.setExpiresAt(Instant.now().minusSeconds(3600)); // Expired
 
         when(refreshTokenRepository.findByToken(token)).thenReturn(Optional.of(refreshToken));
 
@@ -107,7 +107,7 @@ class AuthServiceTest {
         oldRefreshToken.setId(UUID.randomUUID());
         oldRefreshToken.setUsername(username);
         oldRefreshToken.setToken(oldToken);
-        oldRefreshToken.setExpiryDate(Instant.now().plusSeconds(3600));
+        oldRefreshToken.setExpiresAt(Instant.now().plusSeconds(3600));
 
         when(refreshTokenRepository.findByToken(oldToken))
                 .thenReturn(Optional.of(oldRefreshToken));
