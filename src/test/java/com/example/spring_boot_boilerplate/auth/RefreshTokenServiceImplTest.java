@@ -2,6 +2,7 @@ package com.example.spring_boot_boilerplate.auth;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import java.time.Instant;
@@ -12,18 +13,21 @@ import java.util.ArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
 import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
 import com.example.spring_boot_boilerplate.auth.service.impl.RefreshTokenServiceImpl;
 
+@ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceImplTest {
+
+    RefreshTokenServiceImpl refreshTokenServiceImpl;
 
     @Mock
     RefreshTokenRepository refreshTokenRepository;
-
-    @InjectMocks
-    RefreshTokenServiceImpl serviceTokenServiceImpl;
 
     @Captor
     ArgumentCaptor<RefreshToken> tokenCaptor;
@@ -33,16 +37,13 @@ class RefreshTokenServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        // construct service manually because constructor order differs from
-        // @InjectMocks usage
-        serviceTokenServiceImpl = new RefreshTokenServiceImpl(refreshTokenRepository, EXP_MS, MAX_TOKENS);
+        refreshTokenServiceImpl = new RefreshTokenServiceImpl(refreshTokenRepository, EXP_MS, MAX_TOKENS);
     }
 
     @Test
     void create_savesToken_and_returnsToken() {
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
-        String token = serviceTokenServiceImpl.create("alice");
+        String token = refreshTokenServiceImpl.create("alice");
         assertNotNull(token);
         verify(refreshTokenRepository).save(tokenCaptor.capture());
         RefreshToken saved = tokenCaptor.getValue();
@@ -57,7 +58,7 @@ class RefreshTokenServiceImplTest {
     void validate_returnsUsername_whenValid() {
         RefreshToken rt = new RefreshToken("t1", "bob", Instant.now().plusSeconds(60));
         when(refreshTokenRepository.findByToken("t1")).thenReturn(Optional.of(rt));
-        String u = serviceTokenServiceImpl.validate("t1");
+        String u = refreshTokenServiceImpl.validate("t1");
         assertEquals("bob", u);
         verify(refreshTokenRepository, never()).delete(any());
     }
@@ -66,7 +67,7 @@ class RefreshTokenServiceImplTest {
     void validate_returnsNull_and_deletes_whenExpired() {
         RefreshToken rt = new RefreshToken("t2", "carol", Instant.now().minusSeconds(10));
         when(refreshTokenRepository.findByToken("t2")).thenReturn(Optional.of(rt));
-        String u = serviceTokenServiceImpl.validate("t2");
+        String u = refreshTokenServiceImpl.validate("t2");
         assertNull(u);
         verify(refreshTokenRepository).delete(rt);
     }
@@ -74,7 +75,7 @@ class RefreshTokenServiceImplTest {
     @Test
     void validate_returnsNull_whenNotFound() {
         when(refreshTokenRepository.findByToken("missing")).thenReturn(Optional.empty());
-        assertNull(serviceTokenServiceImpl.validate("missing"));
+        assertNull(refreshTokenServiceImpl.validate("missing"));
         verify(refreshTokenRepository, never()).delete(any());
     }
 
@@ -82,7 +83,7 @@ class RefreshTokenServiceImplTest {
     void rotate_returnsNull_whenOldInvalid() {
         // validate -> repository returns empty -> rotate returns null
         when(refreshTokenRepository.findByToken("old")).thenReturn(Optional.empty());
-        String r = serviceTokenServiceImpl.rotate("old");
+        String r = refreshTokenServiceImpl.rotate("old");
         assertNull(r);
     }
 
@@ -92,7 +93,7 @@ class RefreshTokenServiceImplTest {
         when(refreshTokenRepository.findByToken("oldToken")).thenReturn(Optional.of(old));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        String newToken = serviceTokenServiceImpl.rotate("oldToken");
+        String newToken = refreshTokenServiceImpl.rotate("oldToken");
         assertNotNull(newToken);
         assertNotEquals("oldToken", newToken);
         verify(refreshTokenRepository).delete(old);
@@ -103,20 +104,20 @@ class RefreshTokenServiceImplTest {
     void revoke_deletesExisting() {
         RefreshToken rt = new RefreshToken("r1", "eve", Instant.now().plusSeconds(60));
         when(refreshTokenRepository.findByToken("r1")).thenReturn(Optional.of(rt));
-        serviceTokenServiceImpl.revoke("r1");
+        refreshTokenServiceImpl.revoke("r1");
         verify(refreshTokenRepository).delete(rt);
     }
 
     @Test
     void revoke_doesNothing_whenNotFound() {
         when(refreshTokenRepository.findByToken("x")).thenReturn(Optional.empty());
-        serviceTokenServiceImpl.revoke("x");
+        refreshTokenServiceImpl.revoke("x");
         verify(refreshTokenRepository, never()).delete(any());
     }
 
     @Test
     void revokeAll_callsRepositoryDeleteByUsername() {
-        serviceTokenServiceImpl.revokeAll("frank");
+        refreshTokenServiceImpl.revokeAll("frank");
         verify(refreshTokenRepository).deleteByUsername("frank");
     }
 
@@ -128,7 +129,7 @@ class RefreshTokenServiceImplTest {
         tokens.add(new RefreshToken("t2", "greg", Instant.now().minusSeconds(200)));
         tokens.add(new RefreshToken("t3", "greg", Instant.now().minusSeconds(100)));
         when(refreshTokenRepository.findByUsername("greg")).thenReturn(tokens);
-        boolean acted = serviceTokenServiceImpl.enforceTokenLimit("greg");
+        boolean acted = refreshTokenServiceImpl.enforceTokenLimit("greg");
         assertTrue(acted);
         verify(refreshTokenRepository).delete(argThat(rt -> "t1".equals(rt.getToken())));
     }
@@ -138,13 +139,13 @@ class RefreshTokenServiceImplTest {
         List<RefreshToken> tokens = new ArrayList<>();
         tokens.add(new RefreshToken("t1", "hank", Instant.now().minusSeconds(100)));
         when(refreshTokenRepository.findByUsername("hank")).thenReturn(tokens);
-        boolean acted = serviceTokenServiceImpl.enforceTokenLimit("hank");
+        boolean acted = refreshTokenServiceImpl.enforceTokenLimit("hank");
         assertFalse(acted);
         verify(refreshTokenRepository, never()).delete(any());
     }
 
     @Test
     void getMaxConcurrentTokens_returnsConfiguredValue() {
-        assertEquals(MAX_TOKENS, serviceTokenServiceImpl.getMaxConcurrentTokens());
+        assertEquals(MAX_TOKENS, refreshTokenServiceImpl.getMaxConcurrentTokens());
     }
 }

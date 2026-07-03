@@ -102,7 +102,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         // Revoke oldest token
         RefreshToken oldestToken = userTokens.stream()
-                .min((t1, t2) -> t1.getCreatedAt().compareTo(t2.getCreatedAt()))
+                .min((t1, t2) -> t1.getExpiresAt().compareTo(t2.getExpiresAt()))
                 .orElse(null);
 
         if (oldestToken != null) {
