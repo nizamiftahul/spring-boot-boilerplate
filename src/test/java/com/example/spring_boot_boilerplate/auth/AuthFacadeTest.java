@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +16,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import com.example.spring_boot_boilerplate.auth.dto.AuthResponse;
 import com.example.spring_boot_boilerplate.auth.dto.LoginRequest;
 import com.example.spring_boot_boilerplate.auth.service.AuthFacade;
+import com.example.spring_boot_boilerplate.auth.service.RefreshTokenCookieHandler;
 import com.example.spring_boot_boilerplate.auth.service.RefreshTokenService;
 import com.example.spring_boot_boilerplate.auth.service.impl.AuthFacadeImpl;
 import com.example.spring_boot_boilerplate.common.exception.UnauthorizedException;
@@ -47,12 +51,15 @@ class AuthFacadeTest {
     private RefreshTokenService refreshTokenService;
 
     @Mock
+    private RefreshTokenCookieHandler refreshTokenCookieHandler;
+
+    @Mock
     private UserDetailsService userDetailsService;
 
     @BeforeEach
     void setUp() {
         authFacade = new AuthFacadeImpl(authenticationManager, jwtTokenProvider, refreshTokenService,
-                userDetailsService);
+                refreshTokenCookieHandler, userDetailsService);
     }
 
     @Test
@@ -70,10 +77,13 @@ class AuthFacadeTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
 
         Authentication auth = mock(Authentication.class);
+        List<GrantedAuthority> authorities = List.of(
+                () -> "ROLE_USER");
 
+        doReturn(authorities).when(auth).getAuthorities();
         when(authenticationManager.authenticate(eq(authenticationToken))).thenReturn(auth);
         when(jwtTokenProvider.createAccessToken(eq(username), anyList())).thenReturn(accessToken);
-        when(refreshTokenService.enforceConcurrentLimit(eq(username))).thenReturn(false);
+        when(refreshTokenService.enforceTokenLimit(eq(username))).thenReturn(false);
         when(refreshTokenService.create(eq(username))).thenReturn(refreshToken);
 
         AuthResponse resp = authFacade.login(loginRequest, response);
@@ -84,9 +94,9 @@ class AuthFacadeTest {
 
         verify(authenticationManager, times(1)).authenticate(eq(authenticationToken));
         verify(jwtTokenProvider, times(1)).createAccessToken(eq(username), anyList());
-        verify(refreshTokenService, times(1)).enforceConcurrentLimit(eq(username));
+        verify(refreshTokenService, times(1)).enforceTokenLimit(eq(username));
         verify(refreshTokenService, times(1)).create(eq(username));
-        verify(refreshTokenService, times(1)).setCookie(eq(response), eq(refreshToken));
+        verify(refreshTokenCookieHandler, times(1)).write(eq(response), eq(refreshToken));
     }
 
     @Test
@@ -110,9 +120,9 @@ class AuthFacadeTest {
 
         verify(authenticationManager, times(1)).authenticate(eq(authenticationToken));
         verify(jwtTokenProvider, never()).createAccessToken(anyString(), anyList());
-        verify(refreshTokenService, never()).enforceConcurrentLimit(anyString());
+        verify(refreshTokenService, never()).enforceTokenLimit(anyString());
         verify(refreshTokenService, never()).create(anyString());
-        verify(refreshTokenService, never()).setCookie(any(HttpServletResponse.class), anyString());
+        verify(refreshTokenCookieHandler, never()).write(any(HttpServletResponse.class), anyString());
     }
 
     @Test
@@ -126,10 +136,15 @@ class AuthFacadeTest {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
 
-        when(refreshTokenService.getFromCookie(eq(request))).thenReturn(oldRefreshToken);
+        when(refreshTokenCookieHandler.extract(eq(request))).thenReturn(oldRefreshToken);
         when(refreshTokenService.validate(eq(oldRefreshToken))).thenReturn(username);
         when(jwtTokenProvider.createAccessToken(eq(username), anyList())).thenReturn(newToken);
         when(refreshTokenService.rotate(eq(oldRefreshToken))).thenReturn(newRefreshToken);
+
+        UserDetails userDetails = mock(UserDetails.class);
+        List<GrantedAuthority> authorities = List.of(() -> "ROLE_USER");
+        doReturn(authorities).when(userDetails).getAuthorities();
+        when(userDetailsService.loadUserByUsername(eq(username))).thenReturn(userDetails);
 
         AuthResponse resp = authFacade.refresh(request, response);
 
@@ -137,11 +152,11 @@ class AuthFacadeTest {
         assertEquals(newToken, resp.getAccessToken());
         assertEquals(username, resp.getUsername());
 
-        verify(refreshTokenService, times(1)).getFromCookie(eq(request));
+        verify(refreshTokenCookieHandler, times(1)).extract(eq(request));
         verify(refreshTokenService, times(1)).validate(eq(oldRefreshToken));
         verify(jwtTokenProvider, times(1)).createAccessToken(eq(username), anyList());
         verify(refreshTokenService, times(1)).rotate(eq(oldRefreshToken));
-        verify(refreshTokenService, times(1)).setCookie(eq(response), eq(newRefreshToken));
+        verify(refreshTokenCookieHandler, times(1)).write(eq(response), eq(newRefreshToken));
     }
 
     @Test
@@ -149,20 +164,36 @@ class AuthFacadeTest {
     void shouldThrowExceptionWhenRefreshTokenIsInvalid() {
         String oldRefreshToken = UUID.randomUUID().toString();
 
-        when(refreshTokenService.getFromCookie(any(HttpServletRequest.class))).thenReturn(oldRefreshToken);
+        when(refreshTokenCookieHandler.extract(any(HttpServletRequest.class))).thenReturn(oldRefreshToken);
         when(refreshTokenService.validate(eq(oldRefreshToken)))
                 .thenThrow(new UnauthorizedException("Unauthorized: Invalid or expired refresh token"));
 
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
 
-        assertThrows(RuntimeException.class, () -> authFacade.refresh(request, response));
+        assertThrows(UnauthorizedException.class, () -> authFacade.refresh(request, response));
 
-        verify(refreshTokenService, times(1)).getFromCookie(eq(request));
+        verify(refreshTokenCookieHandler, times(1)).extract(eq(request));
         verify(refreshTokenService, times(1)).validate(eq(oldRefreshToken));
         verify(jwtTokenProvider, never()).createAccessToken(anyString(), anyList());
         verify(refreshTokenService, never()).rotate(anyString());
-        verify(refreshTokenService, never()).setCookie(any(HttpServletResponse.class), anyString());
+        verify(refreshTokenCookieHandler, never()).write(any(HttpServletResponse.class), anyString());
+    }
+
+    @Test
+    @DisplayName("Logout revokes refresh token and clears cookie")
+    void shouldLogoutSuccessfully() {
+        String refreshToken = UUID.randomUUID().toString();
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        when(refreshTokenCookieHandler.extract(eq(request))).thenReturn(refreshToken);
+
+        authFacade.logout(request, response);
+
+        verify(refreshTokenCookieHandler, times(1)).extract(eq(request));
+        verify(refreshTokenService, times(1)).revoke(eq(refreshToken));
+        verify(refreshTokenCookieHandler, times(1)).delete(eq(response));
     }
 
 }
