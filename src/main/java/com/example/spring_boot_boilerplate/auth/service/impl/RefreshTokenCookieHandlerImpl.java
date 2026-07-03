@@ -22,14 +22,14 @@ public class RefreshTokenCookieHandlerImpl implements RefreshTokenCookieHandler 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final Duration refreshTokenExpirationMs;
+    private final Duration refreshTokenExpiration;
     private final boolean isProduction;
 
     public RefreshTokenCookieHandlerImpl(
             @Value("${jwt.refresh-token.expiration-ms}") long refreshTokenExpirationMs,
             @Value("${spring.profiles.active:dev}") String activeProfile) {
         this.isProduction = "prod".equalsIgnoreCase(activeProfile);
-        this.refreshTokenExpirationMs = Duration.ofMillis(refreshTokenExpirationMs);
+        this.refreshTokenExpiration = Duration.ofMillis(refreshTokenExpirationMs);
     }
 
     @Override
@@ -39,7 +39,7 @@ public class RefreshTokenCookieHandlerImpl implements RefreshTokenCookieHandler 
                 .sameSite(isProduction ? "Strict" : "Lax")
                 .secure(isProduction) // HTTPS only in production
                 .path("/")
-                .maxAge(refreshTokenExpirationMs.getSeconds()) // 7 days
+                .maxAge(refreshTokenExpiration.getSeconds()) // 7 days
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
         logger.debug("Refresh token cookie set");
@@ -60,15 +60,8 @@ public class RefreshTokenCookieHandlerImpl implements RefreshTokenCookieHandler 
 
     @Override
     public String extract(HttpServletRequest request) {
-        String tokenFromCookie = getFromCookie(request);
-        if (tokenFromCookie != null) {
-            return tokenFromCookie;
-        }
-        String tokenFromHeader = getFromHeader(request);
-        if (tokenFromHeader != null) {
-            return tokenFromHeader;
-        }
-        return null;
+        String token = getFromCookie(request);
+        return token != null ? token : getFromHeader(request);
     }
 
     private String getFromCookie(HttpServletRequest request) {

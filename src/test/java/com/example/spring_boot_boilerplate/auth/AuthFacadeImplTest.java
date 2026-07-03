@@ -37,7 +37,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * Validates token creation, rotation, revocation, and validation logic.
  */
 @ExtendWith(MockitoExtension.class)
-class AuthFacadeTest {
+class AuthFacadeImplTest {
 
     private AuthFacade authFacade;
 

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.spring_boot_boilerplate.auth.service.RefreshTokenService;
 
+import jakarta.transaction.Transactional;
+
 import com.example.spring_boot_boilerplate.auth.entity.RefreshToken;
 import com.example.spring_boot_boilerplate.auth.repository.RefreshTokenRepository;
 
@@ -44,6 +46,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional
     public String rotate(String oldRefreshToken) {
         String username = validate(oldRefreshToken); // Validate first
 
