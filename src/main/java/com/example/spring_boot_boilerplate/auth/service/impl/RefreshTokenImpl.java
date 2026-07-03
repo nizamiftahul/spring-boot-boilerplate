@@ -38,7 +38,7 @@ public class RefreshTokenImpl implements RefreshTokenService {
             @Value("${spring.profiles.active:dev}") String activeProfile,
             @Value("${jwt.max-concurrent-tokens:5}") int maxConcurrentTokens) {
         this.refreshTokenRepository = refreshTokenRepository;
-        this.refreshTokenExpirationMs = Duration.ofMillis(maxConcurrentTokens);
+        this.refreshTokenExpirationMs = Duration.ofMillis(refreshTokenExpirationMs);
         this.isProduction = "prod".equalsIgnoreCase(activeProfile);
         this.maxConcurrentTokens = maxConcurrentTokens;
     }

@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import com.example.spring_boot_boilerplate.auth.dto.AuthResponse;
@@ -26,12 +29,14 @@ public class AuthFacadeImpl implements AuthFacade {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final UserDetailsService userDetailsService;
 
     public AuthFacadeImpl(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService, UserDetailsService userDetailsService) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenService = refreshTokenService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -100,8 +105,11 @@ public class AuthFacadeImpl implements AuthFacade {
         }
 
         // Get user roles for new access token
-        // (In a real app, fetch from UserDetailsService or database)
-        List<String> roles = List.of("USER");
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(a -> a.replace("ROLE_", ""))
+                .toList();
 
         // Create new access token
         String newAccessToken = jwtTokenProvider.createAccessToken(username, roles);

@@ -29,7 +29,6 @@ public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthFacade authFacade;
-    private final boolean isProduction;
 
     /**
      * Constructor injection of all dependencies.
@@ -39,8 +38,7 @@ public class AuthController {
             AuthFacade authFacade,
             @Value("${spring.profiles.active:dev}") String activeProfile) {
         this.authFacade = authFacade;
-        this.isProduction = "prod".equalsIgnoreCase(activeProfile);
-        logger.info("AuthController initialized (prod: {})", isProduction);
+        logger.info("AuthController initialized (prod: {})", activeProfile);
     }
 
     /**

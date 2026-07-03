@@ -15,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import com.example.spring_boot_boilerplate.auth.dto.AuthResponse;
 import com.example.spring_boot_boilerplate.auth.dto.LoginRequest;
@@ -45,9 +46,13 @@ class AuthFacadeTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private UserDetailsService userDetailsService;
+
     @BeforeEach
     void setUp() {
-        authFacade = new AuthFacadeImpl(authenticationManager, jwtTokenProvider, refreshTokenService);
+        authFacade = new AuthFacadeImpl(authenticationManager, jwtTokenProvider, refreshTokenService,
+                userDetailsService);
     }
 
     @Test
